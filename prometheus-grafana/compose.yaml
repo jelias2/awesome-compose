@@ -1,15 +1,26 @@
+volumes:
+  prom_data:
+
+version: '3.8'
+
 services:
   prometheus:
-    image: prom/prometheus
-    container_name: prometheus
+    image: prom/prometheus:latest
+    configs:
+      - source: prometheus-config
+        target: /etc/prometheus/prometheus.yml
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
-    ports:
-      - 9090:9090
-    restart: unless-stopped
     volumes:
-      - ./prometheus:/etc/prometheus
-      - prom_data:/prometheus
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+    ports:
+      - "9090:9090"
   grafana:
     image: grafana/grafana
     container_name: grafana
@@ -21,5 +32,7 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=grafana
     volumes:
       - ./grafana:/etc/grafana/provisioning/datasources
-volumes:
-  prom_data:
+
+configs:
+  prometheus-config:
+    external: true
